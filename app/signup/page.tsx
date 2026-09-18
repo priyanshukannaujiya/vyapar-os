@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { translations, type Language } from '../../lib/translations';
 
 type StoredUser = { merchantName: string; merchantId: string; password: string };
 
@@ -11,13 +12,18 @@ export default function SignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ merchantName: '', merchantId: '', password: '' });
   const [error, setError] = useState('');
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('vyaparos_language') : null;
+    return saved === 'hi' || saved === 'mr' ? saved : 'en';
+  });
+  const tr = (key: string) => translations[language][key as keyof typeof translations.en] || key;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!formData.merchantName || !formData.merchantId || !formData.password) {
-      setError('Please fill in all fields.');
+      setError(tr('fillAll'));
       return;
     }
 
@@ -26,7 +32,7 @@ export default function SignupPage() {
     
     // Check if ID already exists
     if ((existingUsers as StoredUser[]).some((u) => u.merchantId === formData.merchantId)) {
-      setError('Merchant ID already exists. Please log in.');
+      setError(tr('idExists'));
       return;
     }
 
@@ -54,14 +60,15 @@ export default function SignupPage() {
           <Image src="/vyaparos-logo.png" alt="VyaparOS" width={180} height={50} priority />
         </div>
         
-        <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Join VyaparOS for advanced merchant intelligence</p>
+        <div className="auth-language"><label htmlFor="auth-language">{tr('translationLanguage')}</label><select id="auth-language" value={language} onChange={event => { const next = event.target.value as Language; setLanguage(next); localStorage.setItem('vyaparos_language', next); document.documentElement.lang = next; }}><option value="en">{tr('english')}</option><option value="hi">{tr('hindi')}</option><option value="mr">{tr('marathi')}</option></select></div>
+        <h1 className="auth-title">{tr('createAccount')}</h1>
+        <p className="auth-subtitle">{tr('signupSubtitle')}</p>
         
         {error && <div className="auth-error">{error}</div>}
         
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-field">
-            <label htmlFor="merchantName">Business / Merchant Name</label>
+            <label htmlFor="merchantName">{tr('businessName')}</label>
             <input 
               id="merchantName"
               type="text" 
@@ -73,34 +80,34 @@ export default function SignupPage() {
           </div>
           
           <div className="auth-field">
-            <label htmlFor="merchantId">Merchant ID (or Mobile Number)</label>
+            <label htmlFor="merchantId">{tr('merchantId')}</label>
             <input 
               id="merchantId"
               type="text" 
               className="auth-input" 
-              placeholder="Enter your registered ID"
+              placeholder={tr('registeredId')}
               value={formData.merchantId}
               onChange={e => setFormData({...formData, merchantId: e.target.value})}
             />
           </div>
           
           <div className="auth-field">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{tr('password')}</label>
             <input 
               id="password"
               type="password" 
               className="auth-input" 
-              placeholder="Create a strong password"
+              placeholder={tr('strongPassword')}
               value={formData.password}
               onChange={e => setFormData({...formData, password: e.target.value})}
             />
           </div>
           
-          <button type="submit" className="auth-btn">Create Account</button>
+          <button type="submit" className="auth-btn">{tr('createAccountButton')}</button>
         </form>
         
         <div className="auth-footer">
-          Already have an account? <Link href="/login">Log in here</Link>
+          {tr('alreadyAccount')} <Link href="/login">{tr('loginHere')}</Link>
         </div>
       </div>
     </div>

@@ -1,23 +1,26 @@
 'use client';
 
 import { Joyride, EventData, STATUS, Step } from 'react-joyride';
+import { translations, type Language } from '../lib/translations';
 
 interface SimulationAssistantProps {
   run: boolean;
   onFinish: () => void;
+  language: Language;
 }
 
-export default function SimulationAssistant({ run, onFinish }: SimulationAssistantProps) {
+export default function SimulationAssistant({ run, onFinish, language }: SimulationAssistantProps) {
+  const t = translations[language];
   const steps: Step[] = [
     {
       target: 'body',
       content: (
         <div>
           <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--navy)', marginBottom: '8px' }}>
-            Welcome to VyaparOS!
+            {t.welcomeTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            This simulation assistant will guide you through the key features of your new merchant intelligence platform. Let&apos;s get started!
+            {t.tourIntro}
           </p>
         </div>
       ),
@@ -29,10 +32,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Main Navigation
+            {t.mainNavigationTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Use this sidebar to access all your workspace tools. You can easily switch between modules like VyaparDost, Inventory, and Finance. You can also scroll down to see more options!
+            {t.mainNavigationTourText}
           </p>
         </div>
       ),
@@ -43,10 +46,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Run Full AI Scenario
+            {t.runScenarioTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Click here to simulate a real-world scenario where VyaparOS detects issues and automatically generates recommendations.
+            {t.runScenarioTourText}
           </p>
         </div>
       ),
@@ -57,10 +60,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            VyaparOS AI Briefing
+            {t.briefingTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            This is your daily briefing. The AI highlights the most critical things needing your attention and suggests the next best action.
+            {t.briefingTourText}
           </p>
         </div>
       ),
@@ -71,10 +74,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Quick Actions
+            {t.quickActionsTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Access your most frequently used tools here, like receiving payments, creating QRs, or chatting with your AI assistant.
+            {t.quickActionsTourText}
           </p>
         </div>
       ),
@@ -85,10 +88,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Key Performance Indicators
+            {t.kpisTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Monitor your live sales, estimated contributions, customer footfall, and UPI performance at a glance.
+            {t.kpisTourText}
           </p>
         </div>
       ),
@@ -99,10 +102,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            VyaparDost Assistant
+            {t.assistantTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Your 24/7 AI merchant assistant. Ask questions about your business, stock, or payments and get immediate, actionable answers.
+            {t.assistantTourText}
           </p>
         </div>
       ),
@@ -113,10 +116,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Action Center
+            {t.actionCenterTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            When the AI generates a recommendation, it appears here for your review. Approve actions to automatically trigger WhatsApp campaigns, Soundbox alerts, and more.
+            {t.actionCenterTourText}
           </p>
         </div>
       ),
@@ -127,10 +130,10 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       content: (
         <div>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--navy)', marginBottom: '4px' }}>
-            Trusted Execution Ledger
+            {t.ledgerTour}
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Every action, recommendation, and approval is securely logged here, providing a transparent audit trail.
+            {t.ledgerTourText}
           </p>
         </div>
       ),
@@ -155,6 +158,14 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
       run={run}
       scrollToFirstStep
       steps={steps}
+      locale={{
+        back: t.prev,
+        close: t.close,
+        last: t.finish,
+        next: t.next,
+        skip: t.close,
+        nextWithProgress: [t.next, '({step} of {steps})'].join(' '),
+      }}
       options={{
         zIndex: 10000,
         primaryColor: 'var(--blue, #0878d1)',
