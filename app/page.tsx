@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import SimulationAssistant from '../components/SimulationAssistant';
-import { translations, type Language } from '../lib/translations';
+import { surfaceTranslations, translations, type Language } from '../lib/translations';
 import {
   ArrowUpRight, BarChart3, Bell, Bot, Check, ChevronRight,
   CircleDollarSign, ClipboardCheck, Clock3, Home as HomeIcon, IndianRupee, Layers3,
@@ -204,6 +204,39 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
+    const surface = surfaceTranslations[language];
+    const knownValues = new Map<string, string>();
+    Object.values(surfaceTranslations).forEach(languageSurface => {
+      Object.entries(languageSurface).forEach(([key, value]) => {
+        knownValues.set(value, surface[key] || value);
+      });
+    });
+    const translate = () => {
+      const root = document.querySelector('.app-shell');
+      if (!root) return;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const textNodes: Text[] = [];
+      let node: Node | null;
+      while ((node = walker.nextNode())) textNodes.push(node as Text);
+      textNodes.forEach(textNode => {
+        const value = textNode.nodeValue?.trim();
+        if (value && knownValues.has(value)) textNode.nodeValue = textNode.nodeValue?.replace(value, knownValues.get(value) || value) || textNode.nodeValue;
+      });
+      root.querySelectorAll<HTMLElement>('[aria-label], [placeholder], [title]').forEach(element => {
+        ['aria-label', 'placeholder', 'title'].forEach(attribute => {
+          const value = element.getAttribute(attribute);
+          if (value && knownValues.has(value)) element.setAttribute(attribute, knownValues.get(value) || value);
+        });
+      });
+    };
+    translate();
+    const observer = new MutationObserver(translate);
+    const root = document.querySelector('.app-shell');
+    if (root) observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [language]);
 
   useEffect(() => {
