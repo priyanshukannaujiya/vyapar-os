@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+type StoredUser = { merchantName: string; merchantId: string; password: string };
+
 export default function SignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ merchantName: '', merchantId: '', password: '' });
@@ -23,7 +25,7 @@ export default function SignupPage() {
     const existingUsers = JSON.parse(localStorage.getItem('vyapar_users') || '[]');
     
     // Check if ID already exists
-    if (existingUsers.some((u: any) => u.merchantId === formData.merchantId)) {
+    if ((existingUsers as StoredUser[]).some((u) => u.merchantId === formData.merchantId)) {
       setError('Merchant ID already exists. Please log in.');
       return;
     }

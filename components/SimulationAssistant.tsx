@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Joyride, CallBackProps, STATUS, Step } from 'react-joyride';
+import { Joyride, EventData, STATUS, Step } from 'react-joyride';
 
 interface SimulationAssistantProps {
   run: boolean;
@@ -9,12 +8,6 @@ interface SimulationAssistantProps {
 }
 
 export default function SimulationAssistant({ run, onFinish }: SimulationAssistantProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const steps: Step[] = [
     {
       target: 'body',
@@ -24,12 +17,12 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
             Welcome to VyaparOS!
           </h3>
           <p style={{ color: 'var(--text-secondary)' }}>
-            This simulation assistant will guide you through the key features of your new merchant intelligence platform. Let's get started!
+            This simulation assistant will guide you through the key features of your new merchant intelligence platform. Let&apos;s get started!
           </p>
         </div>
       ),
       placement: 'center',
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: '.main-nav',
@@ -145,7 +138,7 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
     },
   ];
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
@@ -155,28 +148,25 @@ export default function SimulationAssistant({ run, onFinish }: SimulationAssista
     }
   };
 
-  if (!mounted) return null;
-
   return (
     <Joyride
-      callback={handleJoyrideCallback}
+      onEvent={handleJoyrideCallback}
       continuous
-      hideCloseButton
       run={run}
       scrollToFirstStep
-      showProgress
-      showSkipButton
       steps={steps}
+      options={{
+        zIndex: 10000,
+        primaryColor: 'var(--blue, #0878d1)',
+        textColor: 'var(--navy, #1a364d)',
+        backgroundColor: '#ffffff',
+        arrowColor: '#ffffff',
+        overlayColor: 'rgba(0, 0, 0, 0.5)',
+        showProgress: true,
+        buttons: ['back', 'skip', 'primary'],
+      }}
       styles={{
-        options: {
-          zIndex: 10000,
-          primaryColor: 'var(--blue, #0878d1)',
-          textColor: 'var(--navy, #1a364d)',
-          backgroundColor: '#ffffff',
-          arrowColor: '#ffffff',
-          overlayColor: 'rgba(0, 0, 0, 0.5)',
-        },
-        buttonNext: {
+        buttonPrimary: {
           backgroundColor: 'var(--blue, #0878d1)',
           borderRadius: '6px',
           fontWeight: 500,

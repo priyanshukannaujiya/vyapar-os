@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+type StoredUser = { merchantId: string; password: string; merchantName?: string };
+
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ merchantId: '', password: '' });
@@ -23,7 +25,7 @@ export default function LoginPage() {
     const existingUsers = JSON.parse(localStorage.getItem('vyapar_users') || '[]');
     
     // Find matching user
-    const user = existingUsers.find((u: any) => 
+    const user = (existingUsers as StoredUser[]).find((u) =>
       u.merchantId === formData.merchantId && u.password === formData.password
     );
 
@@ -79,7 +81,7 @@ export default function LoginPage() {
         </form>
         
         <div className="auth-footer">
-          Don't have an account? <Link href="/signup">Create one here</Link>
+          Don&apos;t have an account? <Link href="/signup">Create one here</Link>
         </div>
       </div>
     </div>

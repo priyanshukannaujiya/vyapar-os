@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import SimulationAssistant from '../components/SimulationAssistant';
 import {
-  AlertTriangle, ArrowUpRight, BarChart3, Bell, Bot, Check, ChevronRight,
+  ArrowUpRight, BarChart3, Bell, Bot, Check, ChevronRight,
   CircleDollarSign, ClipboardCheck, Clock3, Home as HomeIcon, IndianRupee, Layers3,
   Menu, MessageCircle, PackageSearch, Play, QrCode, RotateCcw, Send,
   Smartphone, Volume2, MessageSquareText,
   Settings, ShieldCheck, Sparkles, Target, TrendingDown, TrendingUp,
-  CreditCard, Mic, Users, ScanLine,
+  CreditCard, Mic, ScanLine,
   WalletCards, X, Zap, LogOut, HelpCircle,
 } from 'lucide-react';
 
@@ -134,24 +134,18 @@ const recentPayments = [
   { customer: 'Priya', amount: '₹4,100', method: 'QR', time: '2:31 PM' },
 ];
 
-const aiActivity = [
-  ['09:12', 'ShelfSense detected low milk stock'], ['11:40', 'ProfitPilot identified margin opportunity'],
-  ['14:32', 'VyaparPulse detected afternoon sales drop'], ['14:35', 'VyaparDost generated recommendation'],
-  ['14:36', 'Merchant approval requested'],
-];
+type MerchantUser = { merchantName: string; merchantId: string; password?: string };
 
 export default function Home() {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<MerchantUser | null>(null);
   const [activeNav, setActiveNav] = useState('Dashboard');
   const [scenario, setScenario] = useState<ScenarioStep>('idle');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [query, setQuery] = useState('');
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [actionNotice, setActionNotice] = useState('');
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [chatHistory, setChatHistory] = useState([
     { sender: 'bot', text: 'Namaste! I found 3 connected business issues. Let\'s turn them into your next best action.' }
@@ -216,9 +210,8 @@ export default function Home() {
     localStorage.removeItem('vyaparos_state');
     setChatHistory([{ sender: 'bot', text: 'Namaste! I found 3 connected business issues. Let\'s turn them into your next best action.' }]);
   }
-  function askVyaparDost() { setAssistantOpen(true); setQuery('Aaj kya karna chahiye?'); }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function handleAction(label: string, data?: any) {
+  function askVyaparDost() { if (!assistantOpen) setAssistantOpen(true); setQuery('Aaj kya karna chahiye?'); }
+  function handleAction(label: string, data?: string) {
     if (!label) return;
     if (['Prev', 'Next', 'Finish'].includes(label) || label.includes('Demo')) return;
     
@@ -258,8 +251,8 @@ export default function Home() {
   function handleChatSubmit() {
     if (!query.trim()) return;
     setChatHistory(prev => [...prev, { sender: 'user', text: query }]);
-    setQuery('');
     setAssistantOpen(true);
+    setQuery('');
     // Simulate AI response
     window.setTimeout(() => {
       setChatHistory(prev => [...prev, { sender: 'bot', text: 'Based on these signals, afternoon footfall is 41% below baseline, chocolate inventory has low movement, and a 15% discount would reduce contribution. I recommend a Tea + Chocolate combo.' }]);
@@ -346,7 +339,6 @@ export default function Home() {
         </div>
       </section>
       <div className="mobile-bottom"><button className="active"><HomeIcon size={18} /><span>Home</span></button><button onClick={askVyaparDost}><Bot size={18} /><span>Ask AI</span></button><button onClick={() => setActiveNav('Action Center')}><Zap size={18} /><span>Actions</span></button><button onClick={() => setShowMobileNav(true)}><Menu size={18} /><span>More</span></button></div>
-      {actionNotice && <div role="status" style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 40, background: '#102a43', color: '#fff', padding: '11px 15px', borderRadius: 8, fontSize: 11, boxShadow: '0 8px 22px #102a4330' }}>{actionNotice}</div>}
       
       {simulationStep > 0 && (
         <div className="sim-controller">
