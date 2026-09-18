@@ -161,6 +161,7 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>('en');
   const [runTour, setRunTour] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [numpadAmount, setNumpadAmount] = useState('0');
   
   const t = dict[language];
   const tr = (key: string) => translations[language][key as keyof typeof translations.en] || key;
@@ -207,38 +208,7 @@ export default function Home() {
     document.documentElement.lang = language;
   }, [language]);
 
-  useEffect(() => {
-    const surface = surfaceTranslations[language];
-    const knownValues = new Map<string, string>();
-    Object.values(surfaceTranslations).forEach(languageSurface => {
-      Object.entries(languageSurface).forEach(([key, value]) => {
-        knownValues.set(value, surface[key] || value);
-      });
-    });
-    const translate = () => {
-      const root = document.querySelector('.app-shell');
-      if (!root) return;
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      const textNodes: Text[] = [];
-      let node: Node | null;
-      while ((node = walker.nextNode())) textNodes.push(node as Text);
-      textNodes.forEach(textNode => {
-        const value = textNode.nodeValue?.trim();
-        if (value && knownValues.has(value)) textNode.nodeValue = textNode.nodeValue?.replace(value, knownValues.get(value) || value) || textNode.nodeValue;
-      });
-      root.querySelectorAll<HTMLElement>('[aria-label], [placeholder], [title]').forEach(element => {
-        ['aria-label', 'placeholder', 'title'].forEach(attribute => {
-          const value = element.getAttribute(attribute);
-          if (value && knownValues.has(value)) element.setAttribute(attribute, knownValues.get(value) || value);
-        });
-      });
-    };
-    translate();
-    const observer = new MutationObserver(translate);
-    const root = document.querySelector('.app-shell');
-    if (root) observer.observe(root, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
-  }, [language]);
+  // MutationObserver based translation removed for React stability
 
   useEffect(() => {
     if (isMounted) {
@@ -277,6 +247,7 @@ export default function Home() {
     } else if (label === 'Review & approve' || label === 'Action ready for review') {
       setActiveModal('approval');
     } else if (label === 'Receive payment') {
+      setNumpadAmount('0');
       setActiveModal('numpad');
     } else if (label === 'Create QR') {
       setActiveModal('qrcode');
@@ -298,17 +269,48 @@ export default function Home() {
     handleAction(`${customer} payment details`, customer);
   }
 
-  function handleChatSubmit() {
+  async function handlePayment(amountStr: string) {
+    try {
+      await fetch('/api/transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountStr, customerName: 'QR Customer', method: 'QR' })
+      });
+      // In a real app we'd refresh the dashboard data here
+    } catch (e) {
+      console.error('Failed to create transaction', e);
+    }
+  }
+
+  async function handleChatSubmit() {
     if (!query.trim()) return;
-    setChatHistory(prev => [...prev, { sender: 'user', text: query }]);
+    const userQuery = query;
+    setChatHistory(prev => [...prev, { sender: 'user', text: userQuery }]);
     setAssistantOpen(true);
     setQuery('');
-    // Simulate AI response
-    window.setTimeout(() => {
-      setChatHistory(prev => [...prev, { sender: 'bot', text: 'Based on these signals, afternoon footfall is 41% below baseline, chocolate inventory has low movement, and a 15% discount would reduce contribution. I recommend a Tea + Chocolate combo.' }]);
+    
+    setChatHistory(prev => [...prev, { sender: 'bot', text: '...' }]);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userQuery }),
+      });
+      const data = await res.json();
+      setChatHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[newHistory.length - 1] = { sender: 'bot', text: data.reply || 'Sorry, I encountered an error.' };
+        return newHistory;
+      });
       setScenario('ready'); 
       setActiveNav('Action Center');
-    }, 1500);
+    } catch (e) {
+      setChatHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[newHistory.length - 1] = { sender: 'bot', text: 'Network error connecting to VyaparDost.' };
+        return newHistory;
+      });
+    }
   }
 
   if (!isMounted || !currentUser) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
@@ -319,7 +321,7 @@ export default function Home() {
         <div className="brand-lockup"><div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 4 }}><div style={{ position: 'relative', width: 145, height: 40, overflow: 'hidden', marginLeft: -4 }}><Image src="/vyaparos-logo.png" alt="VyaparOS" fill priority style={{ objectFit: 'cover', objectPosition: 'center' }} /></div><small style={{ fontSize: '9px', color: '#8b99a8', letterSpacing: '0.45px', marginTop: '-4px' }}>{tr('merchantIntelligence')}</small></div><button className="mobile-close" onClick={() => setShowMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
         <div className="demo-pill"><span className="pulse-dot" /> {tr('demoMode')} <span className="demo-sim">{tr('simulation')}</span></div>
         <nav className="main-nav" aria-label={tr('mainNavigation')}><p className="nav-label">{tr('workspace').toUpperCase()}</p>{navItems.map(({ label, icon: Icon, badge }) => <button key={label} className={`nav-item ${activeNav === label ? 'active' : ''}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); }}><Icon size={18} /><span>{navLabels[language][label]}</span>{badge && <b>{badge}</b>}</button>)}</nav>
-        <div className="sidebar-bottom"><div className={`sidebar-trust ${simulationStep === 3 ? 'sim-active' : ''}`}><ShieldCheck size={16} /><div><strong>{tr('trustedExecution')}</strong><span>{simulationStep === 3 ? tr('syncingFirebase') : tr('ledgerSynced')}</span></div><span className="online-dot" /></div><button className="nav-item" onClick={(e) => { e.stopPropagation(); setActiveNav('Settings'); setShowMobileNav(false); }}><Settings size={18} /><span>{tr('settings')}</span></button><button className="nav-item" onClick={(e) => { e.stopPropagation(); localStorage.removeItem('currentUser'); router.push('/login'); }} style={{ color: 'var(--coral)' }}><LogOut size={18} /><span>{tr('signOut')}</span></button><div className="merchant-mini"><div className="avatar">{currentUser?.merchantName?.substring(0, 2).toUpperCase() || 'MR'}</div><div><strong>{currentUser?.merchantName || 'Merchant'}</strong><span>India</span></div><ChevronRight size={15} /></div></div>
+        <div className="sidebar-bottom"><div className={`sidebar-trust ${simulationStep === 3 ? 'sim-active' : ''}`}><ShieldCheck size={16} /><div><strong>{tr('trustedExecution')}</strong><span>{simulationStep === 3 ? tr('syncingFirebase') : tr('ledgerSynced')}</span></div><span className="online-dot" /></div><button className="nav-item" onClick={(e) => { e.stopPropagation(); setActiveNav('Settings'); setShowMobileNav(false); }}><Settings size={18} /><span>{tr('settings')}</span></button><button className="nav-item" onClick={async (e) => { e.stopPropagation(); await fetch('/api/auth/logout', { method: 'POST' }); localStorage.removeItem('currentUser'); localStorage.removeItem('vyaparos_state'); router.push('/login'); }} style={{ color: 'var(--coral)' }}><LogOut size={18} /><span>{tr('signOut')}</span></button><div className="merchant-mini"><div className="avatar">{currentUser?.merchantName?.substring(0, 2).toUpperCase() || 'MR'}</div><div><strong>{currentUser?.merchantName || 'Merchant'}</strong><span>India</span></div><ChevronRight size={15} /></div></div>
       </aside>
 
       <section className="main-column">
@@ -468,9 +470,13 @@ export default function Home() {
             <div className="modal-dialog" style={{maxWidth: 360}}>
               <div className="modal-header"><h3>Receive Payment</h3><button className="close-btn" onClick={() => setActiveModal(null)}><X size={18} /></button></div>
               <div className="modal-body">
-                <div className="amount-display">₹1,250</div>
+                <div className="amount-display">₹{numpadAmount}</div>
                 <div className="numpad-grid">
-                  {[1,2,3,4,5,6,7,8,9,'C',0,'⌫'].map(k => <button key={k} className="numpad-btn">{k}</button>)}
+                  {[1,2,3,4,5,6,7,8,9,'C',0,'⌫'].map(k => <button key={k} className="numpad-btn" onClick={() => {
+                    if (k === 'C') setNumpadAmount('0');
+                    else if (k === '⌫') setNumpadAmount(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+                    else setNumpadAmount(prev => prev === '0' ? String(k) : prev + String(k));
+                  }}>{k}</button>)}
                 </div>
               </div>
               <div className="modal-footer"><button className="primary-btn" onClick={() => { setActiveModal('qrcode'); }} style={{width:'100%', justifyContent:'center'}}>Generate QR Link</button></div>
@@ -485,10 +491,11 @@ export default function Home() {
                   <div style={{width: 180, height: 180, background: '#111', margin: '0 auto', display:'grid', placeItems:'center', borderRadius: 8}}>
                     <QrCode color="#fff" size={80} />
                   </div>
-                  <h4 style={{marginTop: 15, fontSize: 24, color: '#1a364d', margin: '15px 0 5px'}}>₹1,250</h4>
+                  <h4 style={{marginTop: 15, fontSize: 24, color: '#1a364d', margin: '15px 0 5px'}}>₹{numpadAmount}</h4>
                   <p style={{fontSize: 11, color: '#8b9ca7', margin: 0}}>Awaiting customer payment...</p>
                 </div>
               </div>
+              <div className="modal-footer"><button className="primary-btn" onClick={() => { handlePayment(numpadAmount); setActiveModal(null); }} style={{width:'100%', justifyContent:'center'}}>Simulate Payment Received</button></div>
             </div>
           )}
           {activeModal === 'camera' && (

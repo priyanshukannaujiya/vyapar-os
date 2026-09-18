@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,10 +12,15 @@ export default function SignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ merchantName: '', merchantId: '', password: '' });
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('vyaparos_language') : null;
-    return saved === 'hi' || saved === 'mr' ? saved : 'en';
-  });
+  const [language, setLanguage] = useState<Language>('en');
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('vyaparos_language');
+    if (saved === 'hi' || saved === 'mr') {
+      setLanguage(saved);
+    }
+  }, []);
+
   const tr = (key: string) => translations[language][key as keyof typeof translations.en] || key;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,30 +32,32 @@ export default function SignupPage() {
       return;
     }
 
-    // Get existing users from mock DB
-    const existingUsers = JSON.parse(localStorage.getItem('vyapar_users') || '[]');
-    
-    // Check if ID already exists
-    if ((existingUsers as StoredUser[]).some((u) => u.merchantId === formData.merchantId)) {
-      setError(tr('idExists'));
-      return;
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          merchantName: formData.merchantName,
+          merchantId: formData.merchantId,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Signup failed');
+        return;
+      }
+
+      // Log them in immediately locally for the UI state
+      localStorage.setItem('currentUser', JSON.stringify(data.merchant));
+      
+      // Redirect to dashboard
+      router.push('/');
+    } catch (err) {
+      setError('An error occurred during signup');
     }
-
-    // Create new user
-    const newUser = {
-      merchantName: formData.merchantName,
-      merchantId: formData.merchantId,
-      password: formData.password, // In a real app, never store passwords in plain text!
-    };
-
-    // Save to mock DB
-    localStorage.setItem('vyapar_users', JSON.stringify([...existingUsers, newUser]));
-    
-    // Log them in immediately
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    // Redirect to dashboard
-    router.push('/');
   };
 
   return (

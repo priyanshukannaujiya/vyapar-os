@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,10 +12,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ merchantId: '', password: '' });
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('vyaparos_language') : null;
-    return saved === 'hi' || saved === 'mr' ? saved : 'en';
-  });
+  const [language, setLanguage] = useState<Language>('en');
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('vyaparos_language');
+    if (saved === 'hi' || saved === 'mr') {
+      setLanguage(saved);
+    }
+  }, []);
+
   const tr = (key: string) => translations[language][key as keyof typeof translations.en] || key;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,21 +32,29 @@ export default function LoginPage() {
       return;
     }
 
-    // Get existing users from mock DB
-    const existingUsers = JSON.parse(localStorage.getItem('vyapar_users') || '[]');
-    
-    // Find matching user
-    const user = (existingUsers as StoredUser[]).find((u) =>
-      u.merchantId === formData.merchantId && u.password === formData.password
-    );
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          merchantId: formData.merchantId,
+          password: formData.password,
+        }),
+      });
 
-    if (user) {
-      // Log them in
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || tr('invalidCredentials'));
+        return;
+      }
+
+      // Log them in locally for UI state
+      localStorage.setItem('currentUser', JSON.stringify(data.merchant));
       // Redirect to dashboard
       router.push('/');
-    } else {
-      setError(tr('invalidCredentials'));
+    } catch (err) {
+      setError('An error occurred during login');
     }
   };
 

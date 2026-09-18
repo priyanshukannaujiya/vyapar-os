@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Merchant {
+  id           String        @id @default(uuid())
+  merchantId   String        @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  alerts       Alert[]
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  merchantId    String
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  customerName  String
+  amount        Float
+  method        String   // "UPI", "QR", "Cash"
+  status        String   @default("Success")
+  createdAt     DateTime @default(now())
+}
+
+model Alert {
+  id         String   @id @default(uuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  title      String
+  copy       String
+  tone       String   // "coral", "amber", "blue", "green"
+  action     String
+  status     String   @default("Needs review")
+  createdAt  DateTime @default(now())
+}

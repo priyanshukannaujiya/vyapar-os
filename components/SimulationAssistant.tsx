@@ -164,7 +164,6 @@ export default function SimulationAssistant({ run, onFinish, language }: Simulat
         last: t.finish,
         next: t.next,
         skip: t.close,
-        nextWithProgress: [t.next, '({step} of {steps})'].join(' '),
       }}
       options={{
         zIndex: 10000,
